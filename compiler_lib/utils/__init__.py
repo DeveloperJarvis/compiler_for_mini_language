@@ -30,8 +30,21 @@
 # --------------------------------------------------
 # __init__ MODULE
 # --------------------------------------------------
-
+"""
+Purpose:
+- Public API for utility helpers
+- Keep helpers swappable without touching imports elsewhere
+"""
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from .helpers import (
+    setup_logger,
+    pretty_print_ast,
+)
 
+
+__all__ = [
+    "setup_logger",
+    "pretty_print_ast",
+]

@@ -1,0 +1,864 @@
+# main.py:
+import sys
+from pathlib import Path
+from config.config import CompilerConfig
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.ir.ir_builder import IRBuilder
+from compiler_lib.bytecode.generator import BytecodeGenerator
+from compiler_lib.vm.virtual_machine import VirtualMachine
+def main() -> None:
+    if len(sys.argv) != 2:
+        print("Usage python main.py <source_file.mini>")
+        sys.exit(1)
+    source_path = Path(sys.argv[1])
+    if not source_path.exists():
+        print(f"Error: file not found: {source_path}")
+        sys.exit(1)
+    config = CompilerConfig.load()
+    with open(source_path, "r", encoding="utf-8") as f:
+        source_code = f.read()
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    parser = Parser(tokens)
+    ast = parser.parse()
+    semantic = SemanticAnalyzer()
+    semantic.analyze(ast)
+    ir_builder = IRBuilder()
+    ir = ir_builder.build(ast)
+    bytecode_generator = BytecodeGenerator()
+    bytecode = bytecode_generator.generate(ir)
+    vm = VirtualMachine(bytecode)
+    vm.run()
+if __name__ == "__main__":
+    main()
+
+
+# setup.py:
+from setuptools import setup, find_packages
+setup(
+    name="mini-lang-compiler",
+    version="0.1.0",
+    description="Compiler for a custom mini language producing bytecode",
+    author="Developer Jarvis",
+    author_email="developerjarvis@github.com",
+    license="GPL-3.0-or-later",
+    packages=find_packages(
+        exclude=("tests*", "logs*", "examples*")
+    ),
+    python_requires=">=3.9",
+    install_requires=[],
+    extras_require={
+        "dev": [
+            "pytest",
+            "black",
+            "flake8",
+            "mypy",
+        ]
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Compilers",
+    ],
+)
+
+
+# compiler_lib\__init__.py:
+__all__ = [
+    "bytecode",
+    "errors",
+    "ir",
+    "lexer",
+    "parser",
+    "semantic",
+    "utils",
+    "vm",
+]
+
+
+# compiler_lib\bytecode\__init__.py:
+from .generator import (
+    BytecodeGenerator,
+    Instruction,
+    OpCode,
+)
+__all__ = [
+    "BytecodeGenerator",
+    "Instruction",
+    "OpCode",
+]
+
+
+# compiler_lib\bytecode\generator.py:
+"""
+Purpose:
+- Define bytecode instruction format
+- Translate IR -> bytecode
+- No execution logic here
+"""
+from enum import Enum, auto
+from dataclasses import dataclass
+from typing import List, Any
+from compiler_lib.errors import BytecodeError
+class OpCode(Enum):
+    """
+    Supported bytecode operations.
+    """
+    LOAD_CONST = auto()
+    LOAD_VAR = auto()
+    STORE_VAR = auto()
+    ADD = auto()
+    SUB = auto()
+    MUL = auto()
+    DIV = auto()
+    PRINT = auto()
+    JUMP = auto()
+    JUMP_IF_FALSE = auto()
+    HALT = auto()
+@dataclass(frozen=True)
+class Instruction:
+    """
+    Single bytecode instruction
+    """
+    opcode: OpCode
+    operand: Any | None = None
+class BytecodeGenerator:
+    """
+    Converts Intermediate Representation (IR)
+    into executable bytecode
+    """
+    def generate(self, ir: List[Any]) -> List[Instruction]:
+        bytecode: List[Instruction] = []
+        for instr in ir:
+            opcode = instr["op"]
+            arg = instr.get("arg")
+            match opcode:
+                case "LOAD_CONST":
+                    bytecode.append(
+                        Instruction(OpCode.LOAD_CONST, arg)
+                    )
+                case "LOAD_VAR":
+                    bytecode.append(
+                        Instruction(OpCode.LOAD_VAR, arg)
+                    )
+                case "STORE_VAR":
+                    bytecode.append(
+                        Instruction(OpCode.STORE_VAR, arg)
+                    )
+                case "ADD":
+                    bytecode.append(Instruction(OpCode.ADD))
+                case "SUB":
+                    bytecode.append(Instruction(OpCode.SUB))
+                case "MUL":
+                    bytecode.append(Instruction(OpCode.MUL))
+                case "DIV":
+                    bytecode.append(Instruction(OpCode.DIV))
+                case "PRINT":
+                    bytecode.append(Instruction(OpCode.PRINT))
+                case "JUMP":
+                    bytecode.append(
+                        Instruction(OpCode.JUMP, arg)
+                    )
+                case "JUMP_IF_FALSE":
+                    bytecode.append(
+                        Instruction(OpCode.JUMP_IF_FALSE, arg)
+                    )
+                case _:
+                    raise BytecodeError(
+                        f"Unknown IR operation: {opcode}"
+                    )
+        bytecode.append(Instruction(OpCode.HALT))
+        return bytecode
+
+
+# compiler_lib\errors\__init__.py:
+from .compiler_errors import (
+    CompilerError,
+    LexerError,
+    ParserError,
+    SemanticError,
+    BytecodeError,
+    VirtualMachineError,
+)
+__all__ = [
+    "CompilerError",
+    "LexerError",
+    "ParserError",
+    "SemanticError",
+    "BytecodeError",
+    "VirtualMachineError",
+]
+
+
+# compiler_lib\errors\compiler_errors.py:
+"""
+Purpose
+- Base execption hierarchy
+- Phase-specific errors
+- Make error handling explicit and testable
+"""
+class CompilerError(Exception):
+    """
+    Base class for all compiler-related errors.
+    """
+    def __init__(self, message: str, line: int | None = None):
+        self.message = message
+        self.line = line
+        super().__init__(self.__str__())
+    def __str__(self) -> str:
+        if self.line is not None:
+            return f"[Line {self.line}] {self.message}"
+        return self.message
+class LexerError(CompilerError):
+    """Raised during lexical analysis"""
+    pass
+class ParserError(CompilerError):
+    """Raised during syntax analysis"""
+    pass
+class SemanticError(CompilerError):
+    """Raised during semantic analysis"""
+    pass
+class BytecodeError(CompilerError):
+    """Raised during bytecode generation"""
+    pass
+class VirtualMachineError(CompilerError):
+    """Raised during bytecode execution"""
+    pass
+
+
+# compiler_lib\ir\__init__.py:
+from .ir_builder import IRBuilder
+__all__ = [
+    "IRBuilder",
+]
+
+
+# compiler_lib\ir\ir_builder.py:
+from typing import List, Dict, Any
+from compiler_lib.parser.ast_nodes import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+    BinaryExpressionNode,
+    NumberNode,
+    IdentifierNode,
+)
+class IRBuilder:
+    """
+    Converts AST into a linear Intermediate Representation (IR)
+    """
+    def build(self, ast: ProgramNode) -> List[Dict[str, Any]]:
+        ir: List[Dict[str, Any]] = []
+        for stmt in ast.statements:
+            self._emit_statement(stmt, ir)
+        return ir
+    def _emit_statement(self, node, ir):
+        if isinstance(node, AssignmentNode):
+            self._emit_expression(node.value, ir)
+            ir.append({"op": "STORE_VAR", "arg": node.name})
+        elif isinstance(node, PrintNode):
+            self._emit_expression(node.expression, ir)
+            ir.append({"op": "PRINT"})
+    def _emit_expression(self, node, ir):
+        if isinstance(node, NumberNode):
+            ir.append({"op": "LOAD_CONST", "arg": node.value})
+        elif isinstance(node, IdentifierNode):
+            ir.append({"op": "LOAD_VAR", "arg": node.name})
+        elif isinstance(node, BinaryExpressionNode):
+            self._emit_expression(node.left, ir)
+            self._emit_expression(node.right, ir)
+            op_map = {
+                "PLUS": "ADD",
+                "MINUS": "SUB",
+                "STAR": "MUL",
+                "SLASH": "DIV",
+            }
+            if node.operator not in op_map:
+                raise ValueError(
+                    f"Unkown opertor {node.operator}"
+                )
+            ir.append({"op": op_map[node.operator]})
+
+
+# compiler_lib\lexer\__init__.py:
+from .lexer import Lexer
+from .tokens import (
+    Token,
+    TokenType,
+)
+__all__ = [
+    "Lexer",
+    "Token",
+    "TokenType",
+]
+
+
+# compiler_lib\lexer\lexer.py:
+from compiler_lib.lexer.tokens import Token, TokenType
+from compiler_lib.errors import LexerError
+class Lexer:
+    """
+    Simple character-based lexer
+    """
+    def __init__(self, source: str):
+        self.source = source
+        self.pos = 0
+        self.line = 1
+    def tokenize(self):
+        tokens = []
+        while self.pos < len(self.source):
+            char = self.source[self.pos]
+            if char in " \t":
+                self.pos += 1
+            elif char == "\n":
+                self.line += 1
+                self.pos += 1
+            elif char.isdigit():
+                tokens.append(self._number())
+            elif char.isalpha():
+                tokens.append(self._identifier())
+            elif char == "=":
+                tokens.append(Token(TokenType.ASSIGN,
+                                    "=", self.line))
+                self.pos += 1
+            elif char == "+":
+                tokens.append(Token(TokenType.PLUS,
+                                    "+", self.line))
+                self.pos += 1
+            elif char == "-":
+                tokens.append(Token(TokenType.MINUS,
+                                    "-", self.line))
+                self.pos += 1
+            elif char == "*":
+                tokens.append(Token(TokenType.STAR,
+                                    "*", self.line))
+                self.pos += 1
+            elif char == "/":
+                tokens.append(Token(TokenType.SLASH,
+                                    "/", self.line))
+                self.pos += 1
+            else:
+                raise LexerError(
+                    f"Unexpected character '{char}'", self.line
+                )
+        tokens.append(Token(TokenType.EOF, None, self.line))
+        return tokens
+    def _number(self):
+        start = self.pos
+        while (self.pos < len(self.source)
+               and self.source[self.pos].isdigit()):
+            self.pos += 1
+        return Token(
+            TokenType.NUMBER,
+            int(self.source[start:self.pos]),
+            self.line
+        )
+    def _identifier(self):
+        start = self.pos
+        while (self.pos < len(self.source)
+               and self.source[self.pos].isalpha()):
+            self.pos += 1
+        value = self.source[start:self.pos]
+        if value == "print":
+            return Token(TokenType.PRINT, value, self.line)
+        return Token(TokenType.IDENTIFIER, value, self.line)
+
+
+# compiler_lib\lexer\tokens.py:
+from enum import Enum, auto
+from dataclasses import dataclass
+class TokenType(Enum):
+    IDENTIFIER = auto()
+    NUMBER = auto()
+    ASSIGN = auto()
+    PLUS = auto()
+    MINUS = auto()
+    STAR = auto()
+    SLASH = auto()
+    PRINT = auto()
+    EOF = auto()
+@dataclass(frozen=True)
+class Token:
+    type: TokenType
+    value: str | None = None
+    line: int = 0
+
+
+# compiler_lib\parser\__init__.py:
+from .parser import Parser
+from .ast_nodes import *
+__all__ = [
+    "Parser",
+]
+
+
+# compiler_lib\parser\ast_nodes.py:
+class ASTNode:
+    pass
+class ProgramNode(ASTNode):
+    def __init__(self, statements):
+        self.statements = statements
+class AssignmentNode(ASTNode):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+class PrintNode(ASTNode):
+    def __init__(self, expression):
+        self.expression = expression
+class BinaryExpressionNode(ASTNode):
+    def __init__(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+class NumberNode(ASTNode):
+    def __init__(self, value):
+        self.value = value
+class IdentifierNode(ASTNode):
+    def __init__(self, name):
+        self.name = name
+
+
+# compiler_lib\parser\parser.py:
+from compiler_lib.lexer.tokens import TokenType
+from compiler_lib.errors import ParserError
+from compiler_lib.parser.ast_nodes import *
+class Parser:
+    """
+    Recursive-descent parser
+    """
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+    def parse(self):
+        statements = []
+        while not self._match(TokenType.EOF):
+            statements.append(self._statement())
+        return ProgramNode(statements)
+    def _statement(self):
+        if self._match(TokenType.PRINT):
+            expr = self._expression()
+            return PrintNode(expr)
+        if self._check(TokenType.IDENTIFIER):
+            name = self._advance().value
+            self._consume(TokenType.ASSIGN, "Expected '='")
+            expr = self._expression()
+            return AssignmentNode(name, expr)
+        raise ParserError("Invalid Statement")
+    def _expression(self):
+        expr = self._term()
+        while self._match(TokenType.PLUS, TokenType.MINUS):
+            operator = self._previous().type.name
+            right = self._term()
+            expr = BinaryExpressionNode(expr, operator, right)
+        return expr
+    def _term(self):
+        expr = self._factor()
+        while self._match(TokenType.STAR, TokenType.SLASH):
+            operator = self._previous().type.name
+            right = self._factor()
+            expr = BinaryExpressionNode(expr, operator, right)
+        return expr
+    def _factor(self):
+        if self._match(TokenType.NUMBER):
+            return NumberNode(self._previous().value)
+        if self._match(TokenType.IDENTIFIER):
+            return IdentifierNode(self._previous().value)
+        raise ParserError("Expected expression")
+    def _match(self, *types):
+        for t in types:
+            if self._check(t):
+                self._advance()
+                return True
+        return False
+    def _check(self, token_type):
+        return self.tokens[self.pos].type == token_type
+    def _advance(self):
+        token = self.tokens[self.pos]
+        self.pos += 1
+        return token
+    def _consume(self, token_type, message):
+        if self._check(token_type):
+            return self._advance()
+        raise ParserError(message)
+    def _previous(self):
+        return self.tokens[self.pos - 1]
+
+
+# compiler_lib\semantic\__init__.py:
+from .analyzer import SemanticAnalyzer
+__all__ = [
+    "SemanticAnalyzer",
+]
+
+
+# compiler_lib\semantic\analyzer.py:
+from compiler_lib.errors import SemanticError
+from compiler_lib.parser import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+    BinaryExpressionNode,
+    IdentifierNode,
+    NumberNode,
+)
+class SemanticAnalyzer:
+    """
+    Performs semantic checks on AST
+    """
+    def __init__(self):
+        self.symbols = set()
+    def analyze(self, ast: ProgramNode) -> None:
+        for stmt in ast.statements:
+            self._check_statement(stmt)
+    def _check_statement(self, node):
+        if isinstance(node, AssignmentNode):
+            self._check_expression(node.value)
+            self.symbols.add(node.name)
+        elif isinstance(node, PrintNode):
+            self._check_expression(node.expression)
+    def _check_expression(self, node):
+        if isinstance(node, NumberNode):
+            return
+        if isinstance(node, IdentifierNode):
+            if node.name not in self.symbols:
+                raise SemanticError(
+                    f"Undefined variable '{node.name}'"
+                )
+            return
+        if isinstance(node, BinaryExpressionNode):
+            self._check_expression(node.left)
+            self._check_expression(node.right)
+
+
+# compiler_lib\utils\__init__.py:
+"""
+Purpose:
+- Public API for utility helpers
+- Keep helpers swappable without touching imports elsewhere
+"""
+from .helpers import (
+    setup_logger,
+    pretty_print_ast,
+)
+__all__ = [
+    "setup_logger",
+    "pretty_print_ast",
+]
+
+
+# compiler_lib\utils\helpers.py:
+"""
+Purpose:
+- Shared helper utilities
+- Logging setup
+- AST debugging support (useful in tests & development)
+"""
+import logging
+from typing import Any
+def setup_logger(log_file, debug: bool = False) -> logging.Logger:
+    """
+    Configure and return a module-level logger
+    """
+    logger = logging.getLogger("mini_lang_compiler")
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            "[%(asctime)s] [%(levelname)s] %(message)s"
+        )
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    return logger
+def pretty_print_ast(node: Any, indent: int = 0) -> None:
+    """
+    Debug helper to print AST structure in a readable form
+    """
+    prefix = "  " * indent
+    node_type = node.__class__.__name__
+    print(f"{prefix}{node_type}")
+    for attr in getattr(node, "__dict__", {}).values():
+        if isinstance(attr, list):
+            for item in attr:
+                pretty_print_ast(item, indent + 1)
+        elif hasattr(attr, "__dict__"):
+            pretty_print_ast(attr, indent + 1)
+
+
+# compiler_lib\vm\__init__.py:
+"""
+Clean VM public interface
+"""
+from .virtual_machine import VirtualMachine
+__all__ = [
+    "VirtualMachine",
+]
+
+
+# compiler_lib\vm\virtual_machine.py:
+"""
+Purpose:
+- Execute bytecode
+- Stack-based evaluation
+- Minimal runtime state
+"""
+from typing import List, Dict, Any
+from compiler_lib.bytecode import Instruction, OpCode
+from compiler_lib.errors import VirtualMachineError
+class VirtualMachine:
+    """
+    Simple stack-based virtual machine for executing
+    bytecode instructions
+    """
+    def __init__(self, bytecode: List[Instruction]):
+        self.bytecode = bytecode
+        self.stack: List[Any] = []
+        self.variables: Dict[str, Any] = {}
+        self.ip: int = 0                         
+    def run(self) -> None:
+        while self.ip < len(self.bytecode):
+            instr = self.bytecode[self.ip]
+            self.ip += 1
+            match instr.opcode:
+                case OpCode.LOAD_CONST:
+                    self.stack.append(instr.operand)
+                case OpCode.LOAD_VAR:
+                    if instr.operand not in self.variables:
+                        raise VirtualMachineError(
+                            f"Undefined variable '{instr.operand}'"
+                        )
+                    self.stack.append(
+                        self.variables[instr.operand]
+                    )
+                case OpCode.STORE_VAR:
+                    if not self.stack:
+                        raise VirtualMachineError(
+                            "Stack underflow on STORE_VAR"
+                        )
+                    self.variables[
+                        instr.operand] = self.stack.pop()
+                case OpCode.ADD:
+                    self._binary_op(lambda a, b: a + b)
+                case OpCode.SUB:
+                    self._binary_op(lambda a, b: a - b)
+                case OpCode.MUL:
+                    self._binary_op(lambda a, b: a * b)
+                case OpCode.DIV:
+                    self._binary_op(lambda a, b: a / b)
+                case OpCode.PRINT:
+                    if not self.stack:
+                        raise VirtualMachineError(
+                            "Stack underflow on PRINT"
+                        )
+                    print(self.stack.pop())
+                case OpCode.JUMP:
+                    self.ip = instr.operand
+                case OpCode.JUMP_IF_FALSE:
+                    if not self.stack:
+                        raise VirtualMachineError(
+                            "Stack underflow on JUMP_IF_FALSE"
+                        )
+                    condition = self.stack.pop()
+                    if not condition:
+                        self.ip = instr.operand
+                case OpCode.HALT:
+                    return
+                case _:
+                    raise VirtualMachineError(
+                        f"Unknown opcode: {instr.opcode}"
+                    )
+    def _binary_op(self, operation) -> None:
+        if len(self.stack) < 2:
+            raise VirtualMachineError(
+                "Stack underflow on binary operation"
+            )
+        right = self.stack.pop()
+        left = self.stack.pop()
+        self.stack.append(operation(left, right))
+
+
+# config\__init__.py:
+from .config import CompilerConfig
+__all__ = [
+    "CompilerConfig",
+]
+
+
+# config\config.py:
+"""
+Purpose:
+- Centralized compiler configuration
+- Environment-variable override support
+- Logging path control
+"""
+from dataclasses import dataclass
+import os
+from pathlib import Path
+@dataclass(frozen=True)
+class CompilerConfig:
+    """
+    Immutable compiler configuration
+    """
+    log_file: Path
+    debug: bool
+    @classmethod
+    def load(cls) -> 'CompilerConfig':
+        """
+        Load configuration from environment variables with safe
+        defaults.
+        """
+        log_dir = os.getenv("MINI_LANG_LOG_DIR", "logs")
+        log_file = os.getenv(
+            "MINI_LANG_LOG_FILE",
+            "mini_lang_compiler.log",
+        )
+        debug = os.getenv("MINI_LANG_DEBUG",
+                          "false").lower() == "true"
+        log_path = Path(log_dir)
+        log_path.mkdir(parents=True, exist_ok=True)
+        return cls(
+            log_file=log_path / log_file,
+            debug=debug,
+        )
+
+
+# tests\__init__.py:
+"""
+Test suite for Mini Language Compiler
+"""
+
+
+# tests\test_bytecode.py:
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.ir.ir_builder import IRBuilder
+from compiler_lib.bytecode.generator import BytecodeGenerator
+def test_bytecode_generation():
+    source = "x = 2 + 3"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    SemanticAnalyzer().analyze(ast)
+    ir = IRBuilder().build(ast)
+    bytecode = BytecodeGenerator().generate(ir)
+    assert isinstance(bytecode, list)
+    assert len(bytecode) > 0
+
+
+# tests\test_integration.py:
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.ir.ir_builder import IRBuilder
+from compiler_lib.bytecode.generator import BytecodeGenerator
+from compiler_lib.vm.virtual_machine import VirtualMachine
+def test_full_compiler_pipeline(capsys):
+    source = """
+    x = 5
+    y = x + 10
+    print y
+    """
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    SemanticAnalyzer().analyze(ast)
+    ir = IRBuilder().build(ast)
+    bytecode = BytecodeGenerator().generate(ir)
+    vm = VirtualMachine(bytecode)
+    vm.run()
+    captured = capsys.readouterr()
+    assert "15" in captured.out
+
+
+# tests\test_lexer.py:
+import pytest
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.lexer.tokens import TokenType
+def test_basic_tokenization():
+    source = "x = 10 + 20"
+    lexer = Lexer(source)
+    tokens = lexer.tokenize()
+    types = [t.type for t in tokens]
+    assert types == [
+        TokenType.IDENTIFIER,
+        TokenType.ASSIGN,
+        TokenType.NUMBER,
+        TokenType.PLUS,
+        TokenType.NUMBER,
+        TokenType.EOF,
+    ]
+def test_print_keyword():
+    lexer = Lexer("print 5")
+    tokens = lexer.tokenize()
+    assert tokens[0].type == TokenType.PRINT
+    assert tokens[1].type == TokenType.NUMBER
+
+
+# tests\test_parser.py:
+import pytest
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.parser.ast_nodes import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+)
+def test_assignment_parsing():
+    source = "x = 42"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    assert isinstance(ast, ProgramNode)
+    assert len(ast.statements) == 1
+    assert isinstance(ast.statements[0], AssignmentNode)
+def test_print_parsing():
+    source = "print 7"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    assert isinstance(ast.statements[0], PrintNode)
+
+
+# tests\test_semantic.py:
+import pytest
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.errors.compiler_errors import SemanticError
+def test_valid_semantics():
+    source = """
+    x = 10
+    print x
+    """
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    analyzer = SemanticAnalyzer()
+    analyzer.analyze(ast)                     
+def test_defined_variable():
+    source = "print x"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+    analyzer = SemanticAnalyzer()
+    with pytest.raises(SemanticError):
+        analyzer.analyze(ast)
+
+
+# tests\test_vm.py:
+from compiler_lib.vm.virtual_machine import VirtualMachine
+from compiler_lib.bytecode.generator import (
+    OpCode,
+    Instruction,
+)
+def test_vm_execution():
+    bytecode = [
+        Instruction(OpCode.LOAD_CONST, 2),
+        Instruction(OpCode.LOAD_CONST, 3),
+        Instruction(OpCode.ADD, None),
+        Instruction(OpCode.STORE_VAR, "x"),
+        Instruction(OpCode.LOAD_VAR, "x"),
+        Instruction(OpCode.PRINT, None),
+    ]
+    vm = VirtualMachine(bytecode)
+    vm.run()
+    assert vm.variables["x"] == 5
+
+

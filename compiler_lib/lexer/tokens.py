@@ -34,4 +34,30 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from enum import Enum, auto
+from dataclasses import dataclass
 
+
+# --------------------------------------------------
+# token type
+# --------------------------------------------------
+class TokenType(Enum):
+    IDENTIFIER = auto()
+    NUMBER = auto()
+    ASSIGN = auto()
+    PLUS = auto()
+    MINUS = auto()
+    STAR = auto()
+    SLASH = auto()
+    PRINT = auto()
+    EOF = auto()
+
+
+# --------------------------------------------------
+# token
+# --------------------------------------------------
+@dataclass(frozen=True)
+class Token:
+    type: TokenType
+    value: str | None = None
+    line: int = 0

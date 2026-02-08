@@ -34,4 +34,33 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from setuptools import setup, find_packages
 
+
+setup(
+    name="mini-lang-compiler",
+    version="0.1.0",
+    description="Compiler for a custom mini language producing bytecode",
+    author="Developer Jarvis",
+    author_email="developerjarvis@github.com",
+    license="GPL-3.0-or-later",
+    packages=find_packages(
+        exclude=("tests*", "logs*", "examples*")
+    ),
+    python_requires=">=3.9",
+    install_requires=[],
+    extras_require={
+        "dev": [
+            "pytest",
+            "black",
+            "flake8",
+            "mypy",
+        ]
+    },
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "Operating System :: OS Independent",
+        "Topic :: Software Development :: Compilers",
+    ],
+)

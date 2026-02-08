@@ -30,8 +30,50 @@
 # --------------------------------------------------
 # helpers MODULE
 # --------------------------------------------------
-
+"""
+Purpose:
+- Shared helper utilities
+- Logging setup
+- AST debugging support (useful in tests & development)
+"""
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+import logging
+from typing import Any
+
+
+def setup_logger(log_file, debug: bool = False) -> logging.Logger:
+    """
+    Configure and return a module-level logger
+    """
+    logger = logging.getLogger("mini_lang_compiler")
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    if not logger.handlers:
+        formatter = logging.Formatter(
+            "[%(asctime)s] [%(levelname)s] %(message)s"
+        )
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    
+    return logger
+
+
+def pretty_print_ast(node: Any, indent: int = 0) -> None:
+    """
+    Debug helper to print AST structure in a readable form
+    """
+    prefix = "  " * indent
+    node_type = node.__class__.__name__
+
+    print(f"{prefix}{node_type}")
+
+    for attr in getattr(node, "__dict__", {}).values():
+        if isinstance(attr, list):
+            for item in attr:
+                pretty_print_ast(item, indent + 1)
+        elif hasattr(attr, "__dict__"):
+            pretty_print_ast(attr, indent + 1)
 

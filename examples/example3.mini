@@ -1,0 +1,8 @@
+base = 5
+height = 10
+area = base * height
+print area
+
+height = height + 5
+area = base * height
+print area

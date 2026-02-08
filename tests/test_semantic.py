@@ -34,4 +34,31 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+import pytest
 
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.errors.compiler_errors import SemanticError
+
+
+def test_valid_semantics():
+    source = """
+    x = 10
+    print x
+    """
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+
+    analyzer = SemanticAnalyzer()
+    analyzer.analyze(ast)   # should not raise
+
+
+def test_defined_variable():
+    source = "print x"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+
+    analyzer = SemanticAnalyzer()
+    with pytest.raises(SemanticError):
+        analyzer.analyze(ast)

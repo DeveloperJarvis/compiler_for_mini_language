@@ -34,4 +34,64 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from typing import List, Dict, Any
 
+from compiler_lib.parser.ast_nodes import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+    BinaryExpressionNode,
+    NumberNode,
+    IdentifierNode,
+)
+
+
+# --------------------------------------------------
+# IR builder
+# --------------------------------------------------
+class IRBuilder:
+    """
+    Converts AST into a linear Intermediate Representation (IR)
+    """
+
+    def build(self, ast: ProgramNode) -> List[Dict[str, Any]]:
+        ir: List[Dict[str, Any]] = []
+
+        for stmt in ast.statements:
+            self._emit_statement(stmt, ir)
+        
+        return ir
+
+    def _emit_statement(self, node, ir):
+        if isinstance(node, AssignmentNode):
+            self._emit_expression(node.value, ir)
+            ir.append({"op": "STORE_VAR", "arg": node.name})
+
+        elif isinstance(node, PrintNode):
+            self._emit_expression(node.expression, ir)
+            ir.append({"op": "PRINT"})
+    
+    def _emit_expression(self, node, ir):
+        if isinstance(node, NumberNode):
+            ir.append({"op": "LOAD_CONST", "arg": node.value})
+        
+        elif isinstance(node, IdentifierNode):
+            ir.append({"op": "LOAD_VAR", "arg": node.name})
+        
+        elif isinstance(node, BinaryExpressionNode):
+            self._emit_expression(node.left, ir)
+            self._emit_expression(node.right, ir)
+            
+            op_map = {
+                "PLUS": "ADD",
+                "MINUS": "SUB",
+                "STAR": "MUL",
+                "SLASH": "DIV",
+            }
+
+            if node.operator not in op_map:
+                raise ValueError(
+                    f"Unkown opertor {node.operator}"
+                )
+            
+            ir.append({"op": op_map[node.operator]})

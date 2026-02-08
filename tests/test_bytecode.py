@@ -34,4 +34,21 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.ir.ir_builder import IRBuilder
+from compiler_lib.bytecode.generator import BytecodeGenerator
 
+
+def test_bytecode_generation():
+    source = "x = 2 + 3"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+
+    SemanticAnalyzer().analyze(ast)
+    ir = IRBuilder().build(ast)
+    bytecode = BytecodeGenerator().generate(ir)
+
+    assert isinstance(bytecode, list)
+    assert len(bytecode) > 0

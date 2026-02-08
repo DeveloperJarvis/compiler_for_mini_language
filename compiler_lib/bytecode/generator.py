@@ -30,8 +30,109 @@
 # --------------------------------------------------
 # generator MODULE
 # --------------------------------------------------
-
+"""
+Purpose:
+- Define bytecode instruction format
+- Translate IR -> bytecode
+- No execution logic here
+"""
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from enum import Enum, auto
+from dataclasses import dataclass
+from typing import List, Any
 
+from compiler_lib.errors import BytecodeError
+
+
+# --------------------------------------------------
+# op code
+# --------------------------------------------------
+class OpCode(Enum):
+    """
+    Supported bytecode operations.
+    """
+    LOAD_CONST = auto()
+    LOAD_VAR = auto()
+    STORE_VAR = auto()
+
+    ADD = auto()
+    SUB = auto()
+    MUL = auto()
+    DIV = auto()
+
+    PRINT = auto()
+
+    JUMP = auto()
+    JUMP_IF_FALSE = auto()
+
+    HALT = auto()
+
+
+# --------------------------------------------------
+# instruction
+# --------------------------------------------------
+@dataclass(frozen=True)
+class Instruction:
+    """
+    Single bytecode instruction
+    """
+    opcode: OpCode
+    operand: Any | None = None
+
+
+# --------------------------------------------------
+# bytecode generator
+# --------------------------------------------------
+class BytecodeGenerator:
+    """
+    Converts Intermediate Representation (IR)
+    into executable bytecode
+    """
+
+    def generate(self, ir: List[Any]) -> List[Instruction]:
+        bytecode: List[Instruction] = []
+
+        for instr in ir:
+            opcode = instr["op"]
+            arg = instr.get("arg")
+
+            match opcode:
+                case "LOAD_CONST":
+                    bytecode.append(
+                        Instruction(OpCode.LOAD_CONST, arg)
+                    )
+                case "LOAD_VAR":
+                    bytecode.append(
+                        Instruction(OpCode.LOAD_VAR, arg)
+                    )
+                case "STORE_VAR":
+                    bytecode.append(
+                        Instruction(OpCode.STORE_VAR, arg)
+                    )
+                case "ADD":
+                    bytecode.append(Instruction(OpCode.ADD))
+                case "SUB":
+                    bytecode.append(Instruction(OpCode.SUB))
+                case "MUL":
+                    bytecode.append(Instruction(OpCode.MUL))
+                case "DIV":
+                    bytecode.append(Instruction(OpCode.DIV))
+                case "PRINT":
+                    bytecode.append(Instruction(OpCode.PRINT))
+                case "JUMP":
+                    bytecode.append(
+                        Instruction(OpCode.JUMP, arg)
+                    )
+                case "JUMP_IF_FALSE":
+                    bytecode.append(
+                        Instruction(OpCode.JUMP_IF_FALSE, arg)
+                    )
+                case _:
+                    raise BytecodeError(
+                        f"Unknown IR operation: {opcode}"
+                    )
+        
+        bytecode.append(Instruction(OpCode.HALT))
+        return bytecode

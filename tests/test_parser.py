@@ -34,4 +34,30 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+import pytest
 
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.parser.ast_nodes import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+)
+
+
+def test_assignment_parsing():
+    source = "x = 42"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+
+    assert isinstance(ast, ProgramNode)
+    assert len(ast.statements) == 1
+    assert isinstance(ast.statements[0], AssignmentNode)
+
+
+def test_print_parsing():
+    source = "print 7"
+    tokens = Lexer(source).tokenize()
+    ast = Parser(tokens).parse()
+
+    assert isinstance(ast.statements[0], PrintNode)

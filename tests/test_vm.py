@@ -34,4 +34,24 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from compiler_lib.vm.virtual_machine import VirtualMachine
+from compiler_lib.bytecode.generator import (
+    OpCode,
+    Instruction,
+)
 
+
+def test_vm_execution():
+    bytecode = [
+        Instruction(OpCode.LOAD_CONST, 2),
+        Instruction(OpCode.LOAD_CONST, 3),
+        Instruction(OpCode.ADD, None),
+        Instruction(OpCode.STORE_VAR, "x"),
+        Instruction(OpCode.LOAD_VAR, "x"),
+        Instruction(OpCode.PRINT, None),
+    ]
+
+    vm = VirtualMachine(bytecode)
+    vm.run()
+
+    assert vm.variables["x"] == 5

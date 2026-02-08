@@ -34,4 +34,39 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.parser.parser import Parser
+from compiler_lib.semantic.analyzer import SemanticAnalyzer
+from compiler_lib.ir.ir_builder import IRBuilder
+from compiler_lib.bytecode.generator import BytecodeGenerator
+from compiler_lib.vm.virtual_machine import VirtualMachine
 
+
+def test_full_compiler_pipeline(capsys):
+    source = """
+    x = 5
+    y = x + 10
+    print y
+    """
+
+    # Lexing
+    tokens = Lexer(source).tokenize()
+
+    # Parse
+    ast = Parser(tokens).parse()
+
+    # Semanitc analysis
+    SemanticAnalyzer().analyze(ast)
+
+    # IR
+    ir = IRBuilder().build(ast)
+
+    # Bytecode
+    bytecode = BytecodeGenerator().generate(ir)
+
+    # Execute
+    vm = VirtualMachine(bytecode)
+    vm.run()
+
+    captured = capsys.readouterr()
+    assert "15" in captured.out

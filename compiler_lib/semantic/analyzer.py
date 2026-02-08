@@ -34,4 +34,51 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from compiler_lib.errors import SemanticError
+from compiler_lib.parser import (
+    ProgramNode,
+    AssignmentNode,
+    PrintNode,
+    BinaryExpressionNode,
+    IdentifierNode,
+    NumberNode,
+)
 
+
+# --------------------------------------------------
+# sematic analyzer
+# --------------------------------------------------
+class SemanticAnalyzer:
+    """
+    Performs semantic checks on AST
+    """
+
+    def __init__(self):
+        self.symbols = set()
+    
+    def analyze(self, ast: ProgramNode) -> None:
+        for stmt in ast.statements:
+            self._check_statement(stmt)
+    
+    def _check_statement(self, node):
+        if isinstance(node, AssignmentNode):
+            self._check_expression(node.value)
+            self.symbols.add(node.name)
+        
+        elif isinstance(node, PrintNode):
+            self._check_expression(node.expression)
+    
+    def _check_expression(self, node):
+        if isinstance(node, NumberNode):
+            return
+        
+        if isinstance(node, IdentifierNode):
+            if node.name not in self.symbols:
+                raise SemanticError(
+                    f"Undefined variable '{node.name}'"
+                )
+            return
+        
+        if isinstance(node, BinaryExpressionNode):
+            self._check_expression(node.left)
+            self._check_expression(node.right)

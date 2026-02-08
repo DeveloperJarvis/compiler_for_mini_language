@@ -30,8 +30,50 @@
 # --------------------------------------------------
 # config MODULE
 # --------------------------------------------------
-
+"""
+Purpose:
+- Centralized compiler configuration
+- Environment-variable override support
+- Logging path control
+"""
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from dataclasses import dataclass
+import os
+from pathlib import Path
 
+
+# --------------------------------------------------
+# compiler config
+# --------------------------------------------------
+@dataclass(frozen=True)
+class CompilerConfig:
+    """
+    Immutable compiler configuration
+    """
+
+    log_file: Path
+    debug: bool
+
+    @classmethod
+    def load(cls) -> 'CompilerConfig':
+        """
+        Load configuration from environment variables with safe
+        defaults.
+        """
+        log_dir = os.getenv("MINI_LANG_LOG_DIR", "logs")
+        log_file = os.getenv(
+            "MINI_LANG_LOG_FILE",
+            "mini_lang_compiler.log",
+        )
+        debug = os.getenv("MINI_LANG_DEBUG",
+                          "false").lower() == "true"
+        
+        log_path = Path(log_dir)
+        log_path.mkdir(parents=True, exist_ok=True)
+
+        return cls(
+            log_file=log_path / log_file,
+            debug=debug,
+        )

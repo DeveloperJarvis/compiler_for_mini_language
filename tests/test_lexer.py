@@ -34,4 +34,32 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+import pytest
 
+from compiler_lib.lexer.lexer import Lexer
+from compiler_lib.lexer.tokens import TokenType
+
+
+def test_basic_tokenization():
+    source = "x = 10 + 20"
+    lexer = Lexer(source)
+    tokens = lexer.tokenize()
+
+    types = [t.type for t in tokens]
+
+    assert types == [
+        TokenType.IDENTIFIER,
+        TokenType.ASSIGN,
+        TokenType.NUMBER,
+        TokenType.PLUS,
+        TokenType.NUMBER,
+        TokenType.EOF,
+    ]
+
+
+def test_print_keyword():
+    lexer = Lexer("print 5")
+    tokens = lexer.tokenize()
+
+    assert tokens[0].type == TokenType.PRINT
+    assert tokens[1].type == TokenType.NUMBER

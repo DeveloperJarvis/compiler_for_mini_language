@@ -34,4 +34,21 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from .compiler_errors import (
+    CompilerError,
+    LexerError,
+    ParserError,
+    SemanticError,
+    BytecodeError,
+    VirtualMachineError,
+)
 
+
+__all__ = [
+    "CompilerError",
+    "LexerError",
+    "ParserError",
+    "SemanticError",
+    "BytecodeError",
+    "VirtualMachineError",
+]

@@ -35,3 +35,60 @@
 # imports
 # --------------------------------------------------
 
+
+# --------------------------------------------------
+# AST node
+# --------------------------------------------------
+class ASTNode:
+    pass
+
+
+# --------------------------------------------------
+# program node
+# --------------------------------------------------
+class ProgramNode(ASTNode):
+    def __init__(self, statements):
+        self.statements = statements
+
+
+# --------------------------------------------------
+# assignement node
+# --------------------------------------------------
+class AssignmentNode(ASTNode):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+
+# --------------------------------------------------
+# print node
+# --------------------------------------------------
+class PrintNode(ASTNode):
+    def __init__(self, expression):
+        self.expression = expression
+
+
+# --------------------------------------------------
+# binary expression node
+# --------------------------------------------------
+class BinaryExpressionNode(ASTNode):
+    def __init__(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+
+# --------------------------------------------------
+# number node
+# --------------------------------------------------
+class NumberNode(ASTNode):
+    def __init__(self, value):
+        self.value = value
+
+
+# --------------------------------------------------
+# identifier node
+# --------------------------------------------------
+class IdentifierNode(ASTNode):
+    def __init__(self, name):
+        self.name = name

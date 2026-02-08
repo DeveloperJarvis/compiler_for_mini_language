@@ -35,3 +35,14 @@
 # imports
 # --------------------------------------------------
 
+
+__all__ = [
+    "bytecode",
+    "errors",
+    "ir",
+    "lexer",
+    "parser",
+    "semantic",
+    "utils",
+    "vm",
+]

@@ -34,4 +34,15 @@
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
+from .generator import (
+    BytecodeGenerator,
+    Instruction,
+    OpCode,
+)
 
+
+__all__ = [
+    "BytecodeGenerator",
+    "Instruction",
+    "OpCode",
+]

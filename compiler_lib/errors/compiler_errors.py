@@ -30,8 +30,71 @@
 # --------------------------------------------------
 # compiler_errors MODULE
 # --------------------------------------------------
-
+"""
+Purpose
+- Base execption hierarchy
+- Phase-specific errors
+- Make error handling explicit and testable
+"""
 # --------------------------------------------------
 # imports
 # --------------------------------------------------
 
+
+# --------------------------------------------------
+# compiler error
+# --------------------------------------------------
+class CompilerError(Exception):
+    """
+    Base class for all compiler-related errors.
+    """
+
+    def __init__(self, message: str, line: int | None = None):
+        self.message = message
+        self.line = line
+        super().__init__(self.__str__())
+    
+    def __str__(self) -> str:
+        if self.line is not None:
+            return f"[Line {self.line}] {self.message}"
+        return self.message
+
+
+# --------------------------------------------------
+# lexer error
+# --------------------------------------------------
+class LexerError(CompilerError):
+    """Raised during lexical analysis"""
+    pass
+
+
+# --------------------------------------------------
+# parser error
+# --------------------------------------------------
+class ParserError(CompilerError):
+    """Raised during syntax analysis"""
+    pass
+
+
+# --------------------------------------------------
+# semantic error
+# --------------------------------------------------
+class SemanticError(CompilerError):
+    """Raised during semantic analysis"""
+    pass
+
+
+# --------------------------------------------------
+# bytecode error
+# --------------------------------------------------
+class BytecodeError(CompilerError):
+    """Raised during bytecode generation"""
+    pass
+
+
+# --------------------------------------------------
+# virtual machine error
+# --------------------------------------------------
+class VirtualMachineError(CompilerError):
+    """Raised during bytecode execution"""
+    pass
